@@ -1,31 +1,42 @@
-# ======================================
-# PIPELINE TRIGGERS
-# ======================================
+# ======================================================
+# TRIGGERS
+# ======================================================
 
+# Run pipeline after merge to main
 trigger:
   branches:
     include:
       - main
 
+# Run pipeline for Pull Requests to main
 pr:
   branches:
     include:
       - main
 
-# ======================================
-# AGENT
-# ======================================
+# ======================================================
+# AGENT POOL (SELF-HOSTED WINDOWS AGENT)
+# ======================================================
 
 pool:
-  vmImage: ubuntu-latest
+  name: WindowsSelfHostedPool
 
-# ======================================
+# ======================================================
+# VARIABLES
+# ======================================================
+
+variables:
+  nodeVersion: '18.x'
+
+# ======================================================
 # STAGES
-# ======================================
+# ======================================================
 
 stages:
 
-# ---------- STAGE 1: BUILD (ALWAYS RUNS) ----------
+# ------------------------------------------------------
+# STAGE 1: BUILD & TEST (RUNS FOR PR + MAIN)
+# ------------------------------------------------------
 - stage: Build
   displayName: Build_and_Test
   condition: always()
@@ -36,39 +47,14 @@ stages:
         - checkout: self
 
         - task: NodeTool@0
-          displayName: Install_NodeJS
+          displayName: Use_NodeJS
           inputs:
-            versionSpec: '18.x'
+            versionSpec: $(nodeVersion)
 
         - script: |
             npm install
             npm run build
             npm test
-          displayName: Build_and_Test_App
+          displayName: Install_Build_Test
 
-# ---------- STAGE 2: DEPLOY (ONLY AFTER MERGE TO MAIN) ----------
-- stage: Deploy
-  displayName: Deploy_to_Azure_App_Service
-  dependsOn: Build
-  condition: |
-    and(
-      succeeded(),
-      eq(variables['Build.SourceBranch'], 'refs/heads/main'),
-      ne(variables['Build.Reason'], 'PullRequest')
-    )
-
-  jobs:
-    - deployment: DeployWeb
-      displayName: Deploy_Web_App
-      environment: production
-      strategy:
-        runOnce:
-          deploy:
-            steps:
-              - task: AzureWebApp@1
-                displayName: Deploy_To_Azure
-                inputs:
-                  azureSubscription: 'Azure-AppService-Connection'
-                  appType: webApp
-                  appName: 'demo9081'
-                  package: '$(System.DefaultWorkingDirectory)'
+# ------------------------------------------------------
