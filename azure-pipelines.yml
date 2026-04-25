@@ -1,3 +1,7 @@
+# ======================================
+# PIPELINE TRIGGERS
+# ======================================
+
 trigger:
   branches:
     include:
@@ -8,38 +12,43 @@ pr:
     include:
       - main
 
+# ======================================
+# AGENT
+# ======================================
+
 pool:
   vmImage: ubuntu-latest
 
+# ======================================
+# STAGES
+# ======================================
+
 stages:
 
-# =========================
-# BUILD STAGE (ALWAYS RUN)
-# =========================
+# ---------- STAGE 1: BUILD (ALWAYS RUNS) ----------
 - stage: Build
   displayName: Build_and_Test
   condition: always()
   jobs:
-  - job: BuildJob
-    steps:
-    - checkout: self
+    - job: BuildJob
+      displayName: Build_Job
+      steps:
+        - checkout: self
 
-    - task: NodeTool@0
-      inputs:
-        versionSpec: '18.x'
-      displayName: Install_Node
+        - task: NodeTool@0
+          displayName: Install_NodeJS
+          inputs:
+            versionSpec: '18.x'
 
-    - script: |
-        npm install
-        npm run build
-        npm test
-      displayName: Build_Test
+        - script: |
+            npm install
+            npm run build
+            npm test
+          displayName: Build_and_Test_App
 
-# =========================
-# DEPLOY STAGE (MAIN ONLY)
-# =========================
+# ---------- STAGE 2: DEPLOY (ONLY AFTER MERGE TO MAIN) ----------
 - stage: Deploy
-  displayName: Deploy_to_Azure
+  displayName: Deploy_to_Azure_App_Service
   dependsOn: Build
   condition: |
     and(
@@ -49,15 +58,17 @@ stages:
     )
 
   jobs:
-  - deployment: DeployWeb
-    environment: production
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - task: AzureWebApp@1
-            inputs:
-              azureSubscription: 'Azure-AppService-Connection'
-              appType: webApp
-              appName: '<YOUR_APP_SERVICE_NAME>'
-              package: '$(System.DefaultWorkingDirectory)'
+    - deployment: DeployWeb
+      displayName: Deploy_Web_App
+      environment: production
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - task: AzureWebApp@1
+                displayName: Deploy_To_Azure
+                inputs:
+                  azureSubscription: 'Azure-AppService-Connection'
+                  appType: webApp
+                  appName: 'demo9081'
+                  package: '$(System.DefaultWorkingDirectory)'
