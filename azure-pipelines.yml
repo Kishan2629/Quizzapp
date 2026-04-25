@@ -1,0 +1,73 @@
+# Trigger deployment after merge to main
+trigger:
+ branches:
+ include:
+ - main
+
+# Trigger build only for PR validation
+pr:
+ branches:
+ include:
+ - main
+
+pool:
+ vmImage: ubuntu-latest
+
+variables:
+ nodeVersion: '18.x'
+
+stages:
+
+# =========================
+# STAGE 1: CI (Build & Test)
+# =========================
+- stage: Build
+ displayName: 'Build and Test'
+ jobs:
+ - job: BuildJob
+ displayName: 'CI Job'
+ steps:
+ - checkout: self
+
+ - task: NodeTool@0
+ inputs:
+ versionSpec: $(nodeVersion)
+ displayName: 'Install Node.js'
+
+ - script: |
+ npm install
+ npm run build
+ npm test
+ displayName: 'Build and Test'
+
+# ======================================
+# STAGE 2: CD (Deploy after merge to main)
+# ======================================
+- stage: Deploy
+ displayName: 'Deploy to Azure App Service'
+ dependsOn: Build
+
+ # CRITICAL CONDITION
+ # This ensures deployment runs ONLY after merge (not for PR)
+ condition: |
+ and(
+ succeeded(),
+ eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+ ne(variables['Build.Reason'], 'PullRequest')
+ )
+
+ jobs:
+ - deployment: DeployJob
+ displayName: 'Deploy Web App'
+ environment: production
+ strategy:
+ runOnce:
+ deploy:
+ steps:
+ - task: AzureWebApp@1
+ displayName: 'Deploy to Azure App Service'
+ inputs:
+ azureSubscription: 'Azure-AppService-Connection'
+ appType: webApp
+ appName: '<YOUR_APP_SERVICE_NAME>'
+ package: '$(System.DefaultWorkingDirectory)'
