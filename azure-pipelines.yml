@@ -51,6 +51,15 @@ stages:
           inputs:
             versionSpec: $(nodeVersion)
 
+        - task: CmdLine@2
+          displayName: Install_Build_Test
+          inputs:
+            workingDirectory: app
+            script: |
+              npm install
+              npm run build
+              npm test
+
         # Run npm commands inside app folder
         - script: |
             cd app
