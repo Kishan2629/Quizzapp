@@ -1,4 +1,3 @@
-
 trigger:
   branches:
     include:
@@ -13,14 +12,15 @@ pool:
   vmImage: ubuntu-latest
 
 stages:
+
 # =========================
-# BUILD STAGE (PR + MAIN)
+# BUILD STAGE (ALWAYS RUN)
 # =========================
 - stage: Build
   displayName: Build_and_Test
+  condition: always()
   jobs:
   - job: BuildJob
-    displayName: Build
     steps:
     - checkout: self
 
@@ -44,12 +44,12 @@ stages:
   condition: |
     and(
       succeeded(),
-      eq(variables['Build.SourceBranch'], 'refs/heads/main')
+      eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+      ne(variables['Build.Reason'], 'PullRequest')
     )
 
   jobs:
   - deployment: DeployWeb
-    displayName: DeployApp
     environment: production
     strategy:
       runOnce:
