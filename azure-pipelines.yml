@@ -51,10 +51,10 @@ stages:
           inputs:
             versionSpec: $(nodeVersion)
 
+        # Run npm commands inside app folder
         - script: |
+            cd app
             npm install
             npm run build
             npm test
           displayName: Install_Build_Test
-
-# ------------------------------------------------------
