@@ -2,20 +2,18 @@
 # TRIGGERS
 # ======================================================
 
-# Run pipeline after merge to main
 trigger:
   branches:
     include:
       - main
 
-# Run pipeline for Pull Requests to main
 pr:
   branches:
     include:
       - main
 
 # ======================================================
-# AGENT POOL (SELF-HOSTED WINDOWS AGENT)
+# AGENT POOL
 # ======================================================
 
 pool:
@@ -33,13 +31,8 @@ variables:
 # ======================================================
 
 stages:
-
-# ------------------------------------------------------
-# STAGE 1: BUILD & TEST (RUNS FOR PR + MAIN)
-# ------------------------------------------------------
 - stage: Build
   displayName: Build_and_Test
-  condition: always()
   jobs:
     - job: BuildJob
       displayName: Build_Job
@@ -54,16 +47,8 @@ stages:
         - task: CmdLine@2
           displayName: Install_Build_Test
           inputs:
-            workingDirectory: app
+            workingDirectory: $(System.DefaultWorkingDirectory)
             script: |
               npm install
               npm run build
               npm test
-
-        # Run npm commands inside app folder
-        - script: |
-            cd app
-            npm install
-            npm run build
-            npm test
-          displayName: Install_Build_Test
