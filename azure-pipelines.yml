@@ -31,6 +31,10 @@ variables:
 # ======================================================
 
 stages:
+
+# =========================
+# BUILD STAGE (CI)
+# =========================
 - stage: Build
   displayName: Build_and_Test
   jobs:
@@ -39,10 +43,10 @@ stages:
       steps:
         - checkout: self
 
-        - task: NodeTool@0
+        - task: UseNode@1
           displayName: Use_NodeJS
           inputs:
-            versionSpec: $(nodeVersion)
+            version: $(nodeVersion)
 
         - task: CmdLine@2
           displayName: Install_Build_Test
@@ -52,3 +56,26 @@ stages:
               npm install
               npm run build
               npm test
+
+# =========================
+# DEPLOY STAGE (CD)
+# =========================
+- stage: Deploy
+  displayName: Deploy_to_Azure_App_Service
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+    - deployment: DeployWeb
+      displayName: Deploy_Node_App
+      environment: production
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - task: AzureWebApp@1
+                displayName: Deploy_to_demo9081
+                inputs:
+                  azureSubscription: Azure-AppService-Connection
+                  appName: demo9081
+                  appType: webApp
+                  package: $(System.DefaultWorkingDirectory)
