@@ -4,7 +4,7 @@ const port = process.env.PORT || 3000;
 
 // Simple route
 app.get("/", (req, res) => {
-  res.send("Hello World! This is a sample Node.js app for testing deployment.");
+  res.send("Hello India! This is a sample Node.js app for testing deployment.");
 });
 
 // Health check route
